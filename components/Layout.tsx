@@ -11,7 +11,8 @@ import {
   Bell,
   LogOut,
   Image as ImageIcon,
-  Lock
+  Lock,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { AppLogo, COLORS } from '../constants';
 
@@ -46,6 +47,7 @@ const Layout: React.FC<LayoutProps> = ({
     { id: 'deliveries', label: 'Entregas', icon: Truck },
     { id: 'clients', label: 'Clientes', icon: Users },
     { id: 'inventory', label: 'Estoque', icon: Package },
+    { id: 'settings', label: 'Ajustes', icon: SettingsIcon },
   ];
 
   const currentNavItems = isAuthenticated ? [...publicItems, ...adminItems] : publicItems;
@@ -189,11 +191,11 @@ const Layout: React.FC<LayoutProps> = ({
           {children}
         </main>
 
-        {/* Mobile Nav Bar - Context Aware */}
+        {/* Mobile Nav Bar */}
         <nav className="md:hidden bg-white border-t border-gray-200 flex justify-around p-3 shrink-0">
           {isAuthenticated ? (
             <>
-              {adminItems.slice(0, 4).map((item) => (
+              {[adminItems[0], adminItems[1], adminItems[4], adminItems[5]].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id)}
@@ -205,23 +207,12 @@ const Layout: React.FC<LayoutProps> = ({
                   <span className="text-[10px] font-medium">{item.label}</span>
                 </button>
               ))}
-              <button
-                  onClick={() => handleTabChange('catalog')}
-                  className={`flex flex-col items-center gap-1 ${
-                    activeTab === 'catalog' ? 'text-red-600' : 'text-gray-400'
-                  }`}
-                >
-                  <ImageIcon size={20} />
-                  <span className="text-[10px] font-medium">Encarte</span>
-                </button>
             </>
           ) : (
-            <button
-                className="flex flex-col items-center gap-1 text-red-600"
-              >
-                <ImageIcon size={20} />
-                <span className="text-[10px] font-medium">Encarte</span>
-              </button>
+            <button className="flex flex-col items-center gap-1 text-red-600">
+              <ImageIcon size={20} />
+              <span className="text-[10px] font-medium">Encarte</span>
+            </button>
           )}
         </nav>
       </div>

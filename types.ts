@@ -77,6 +77,7 @@ export interface AppState {
   products: Product[];
   sales: Sale[];
   deliveries: Delivery[];
+  deliverers: string[];
   currentUser: {
     name: string;
     role: UserRole;

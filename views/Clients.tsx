@@ -1,17 +1,20 @@
 
 import React from 'react';
-import { Search, UserPlus, Phone, MapPin, MoreVertical, MessageSquare, X } from 'lucide-react';
+import { Search, UserPlus, Phone, MapPin, MoreVertical, MessageSquare, X, Edit2, Trash2 } from 'lucide-react';
 import { Client, ClientType } from '../types';
 
 interface ClientsProps {
   clients: Client[];
   onAddClient: (client: Partial<Client>) => void;
+  onUpdateClient: (client: Client) => void;
+  onRemoveClient: (id: string) => void;
 }
 
-const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
+const Clients: React.FC<ClientsProps> = ({ clients, onAddClient, onUpdateClient, onRemoveClient }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [newClient, setNewClient] = React.useState<Partial<Client>>({
+  const [activeMenuId, setActiveMenuId] = React.useState<string | null>(null);
+  const [formData, setFormData] = React.useState<Partial<Client>>({
     name: '',
     phone: '',
     address: '',
@@ -25,11 +28,41 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClient.name) return;
-    onAddClient(newClient);
+    if (!formData.name) return;
+
+    if (formData.id) {
+      onUpdateClient(formData as Client);
+    } else {
+      onAddClient(formData);
+    }
+
     setIsModalOpen(false);
-    setNewClient({ name: '', phone: '', address: '', type: ClientType.RESIDENTIAL });
+    resetForm();
   };
+
+  const resetForm = () => {
+    setFormData({ name: '', phone: '', address: '', type: ClientType.RESIDENTIAL });
+  };
+
+  const handleEdit = (client: Client) => {
+    setFormData(client);
+    setIsModalOpen(true);
+    setActiveMenuId(null);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Tem certeza que deseja remover este cliente?')) {
+      onRemoveClient(id);
+    }
+    setActiveMenuId(null);
+  };
+
+  // Close menu when clicking outside
+  React.useEffect(() => {
+    const handleClick = () => setActiveMenuId(null);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -45,7 +78,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
           />
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => { resetForm(); setIsModalOpen(true); }}
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 font-semibold text-sm"
         >
           <UserPlus size={20} />
@@ -70,7 +103,32 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                   </span>
                 </div>
               </div>
-              <button className="text-gray-400 hover:text-gray-600"><MoreVertical size={20} /></button>
+              
+              <div className="relative">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === client.id ? null : client.id); }}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                
+                {activeMenuId === client.id && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
+                    <button 
+                      onClick={() => handleEdit(client)}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <Edit2 size={16} /> Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(client.id)}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={16} /> Remover
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-3 mb-4">
@@ -101,12 +159,12 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
         ))}
       </div>
 
-      {/* Modal Novo Cliente */}
+      {/* Modal Cadastro/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-red-600 p-6 text-white flex items-center justify-between">
-              <h3 className="text-xl font-bold">Cadastrar Cliente</h3>
+              <h3 className="text-xl font-bold">{formData.id ? 'Editar Cliente' : 'Cadastrar Cliente'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="hover:bg-red-500 p-1 rounded-full transition-colors">
                 <X />
               </button>
@@ -119,8 +177,8 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                   type="text" 
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
                   placeholder="Ex: João Silva"
-                  value={newClient.name}
-                  onChange={e => setNewClient({...newClient, name: e.target.value})}
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
                 />
               </div>
               <div>
@@ -129,8 +187,8 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                   type="tel" 
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
                   placeholder="85 9..."
-                  value={newClient.phone}
-                  onChange={e => setNewClient({...newClient, phone: e.target.value})}
+                  value={formData.phone}
+                  onChange={e => setFormData({...formData, phone: e.target.value})}
                 />
               </div>
               <div>
@@ -138,8 +196,8 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                 <textarea 
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium min-h-[80px]"
                   placeholder="Rua, número, bairro..."
-                  value={newClient.address}
-                  onChange={e => setNewClient({...newClient, address: e.target.value})}
+                  value={formData.address}
+                  onChange={e => setFormData({...formData, address: e.target.value})}
                 />
               </div>
               <div>
@@ -147,15 +205,15 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                 <div className="flex gap-2">
                   <button 
                     type="button"
-                    onClick={() => setNewClient({...newClient, type: ClientType.RESIDENTIAL})}
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${newClient.type === ClientType.RESIDENTIAL ? 'bg-red-50 border-red-500 text-red-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                    onClick={() => setFormData({...formData, type: ClientType.RESIDENTIAL})}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${formData.type === ClientType.RESIDENTIAL ? 'bg-red-50 border-red-500 text-red-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
                   >
                     Residencial
                   </button>
                   <button 
                     type="button"
-                    onClick={() => setNewClient({...newClient, type: ClientType.COMMERCIAL})}
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${newClient.type === ClientType.COMMERCIAL ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                    onClick={() => setFormData({...formData, type: ClientType.COMMERCIAL})}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${formData.type === ClientType.COMMERCIAL ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
                   >
                     Comercial
                   </button>
@@ -165,7 +223,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
                 type="submit"
                 className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all mt-4"
               >
-                Salvar Cliente
+                {formData.id ? 'Salvar Alterações' : 'Salvar Cliente'}
               </button>
             </form>
           </div>
