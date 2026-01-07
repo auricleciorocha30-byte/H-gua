@@ -1,0 +1,7 @@
+{
+  "name": "H Água – Água com confiança",
+  "description": "Aplicativo completo para revenda de água e gás com gestão de clientes, vendas, entregas, estoque e inteligência artificial.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
