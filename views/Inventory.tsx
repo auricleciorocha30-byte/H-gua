@@ -1,17 +1,20 @@
 
 import React from 'react';
-import { Package, Plus, AlertTriangle, TrendingDown, PackageOpen, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
+import { Package, Plus, AlertTriangle, TrendingDown, PackageOpen, ArrowUpCircle, ArrowDownCircle, X, Edit2, Trash2 } from 'lucide-react';
 import { Product } from '../types';
 
 interface InventoryProps {
   products: Product[];
   onUpdateStock: (id: string, amount: number) => void;
   onAddProduct: (product: Partial<Product>) => void;
+  onUpdateProduct: (product: Product) => void;
+  onRemoveProduct: (id: string) => void;
 }
 
-const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddProduct }) => {
+const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddProduct, onUpdateProduct, onRemoveProduct }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [newProduct, setNewProduct] = React.useState<Partial<Product>>({
+  const [editingProduct, setEditingProduct] = React.useState<Partial<Product> | null>(null);
+  const [formData, setFormData] = React.useState<Partial<Product>>({
     name: '',
     category: 'WATER',
     price: 0,
@@ -22,10 +25,37 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.name) return;
-    onAddProduct(newProduct);
+    if (!formData.name) return;
+
+    if (formData.id) {
+      onUpdateProduct(formData as Product);
+    } else {
+      onAddProduct(formData);
+    }
+    
+    closeModal();
+  };
+
+  const openModal = (product?: Product) => {
+    if (product) {
+      setFormData(product);
+      setEditingProduct(product);
+    } else {
+      setFormData({ name: '', category: 'WATER', price: 0, stock: 0, minStock: 5, icon: '💧' });
+      setEditingProduct(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
     setIsModalOpen(false);
-    setNewProduct({ name: '', category: 'WATER', price: 0, stock: 0, minStock: 5, icon: '💧' });
+    setEditingProduct(null);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Tem certeza que deseja remover este produto permanentemente do estoque?')) {
+      onRemoveProduct(id);
+    }
   };
 
   return (
@@ -74,7 +104,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                 Lista de Estoque
             </h3>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => openModal()}
               className="text-red-600 font-bold text-sm flex items-center gap-1 hover:underline"
             >
                 <Plus size={16} /> Adicionar Produto
@@ -120,7 +150,22 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-gray-400 hover:text-gray-600 text-sm font-bold">Editar</button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => openModal(product)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        title="Editar"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(product.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        title="Excluir"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -129,13 +174,13 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
         </div>
       </div>
 
-      {/* Modal Novo Produto */}
+      {/* Modal Produto */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-red-600 p-6 text-white flex items-center justify-between">
-              <h3 className="text-xl font-bold">Novo Produto</h3>
-              <button onClick={() => setIsModalOpen(false)} className="hover:bg-red-500 p-1 rounded-full transition-colors">
+              <h3 className="text-xl font-bold">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h3>
+              <button onClick={closeModal} className="hover:bg-red-500 p-1 rounded-full transition-colors">
                 <X />
               </button>
             </div>
@@ -146,8 +191,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     <input 
                       type="text"
                       className="w-full py-3 bg-gray-50 border border-gray-100 rounded-xl text-center text-xl outline-none"
-                      value={newProduct.icon}
-                      onChange={e => setNewProduct({...newProduct, icon: e.target.value})}
+                      value={formData.icon}
+                      onChange={e => setFormData({...formData, icon: e.target.value})}
                     />
                  </div>
                  <div className="col-span-3">
@@ -157,8 +202,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                       type="text" 
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
                       placeholder="Ex: Água 20L Naturagua"
-                      value={newProduct.name}
-                      onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
                     />
                  </div>
               </div>
@@ -168,8 +213,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Categoria</label>
                     <select 
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm font-medium"
-                        value={newProduct.category}
-                        onChange={e => setNewProduct({...newProduct, category: e.target.value as any})}
+                        value={formData.category}
+                        onChange={e => setFormData({...formData, category: e.target.value as any})}
                     >
                         <option value="WATER">Água</option>
                         <option value="GAS">Gás</option>
@@ -182,8 +227,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     <input 
                       type="number" step="0.01"
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
-                      value={newProduct.price}
-                      onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
+                      value={formData.price}
+                      onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
                     />
                   </div>
               </div>
@@ -193,9 +238,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Estoque Inicial</label>
                     <input 
                       type="number"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
-                      value={newProduct.stock}
-                      onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})}
+                      disabled={!!editingProduct}
+                      className={`w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium ${editingProduct ? 'opacity-50' : ''}`}
+                      value={formData.stock}
+                      onChange={e => setFormData({...formData, stock: parseInt(e.target.value)})}
                     />
                   </div>
                   <div>
@@ -203,8 +249,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                     <input 
                       type="number"
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
-                      value={newProduct.minStock}
-                      onChange={e => setNewProduct({...newProduct, minStock: parseInt(e.target.value)})}
+                      value={formData.minStock}
+                      onChange={e => setFormData({...formData, minStock: parseInt(e.target.value)})}
                     />
                   </div>
               </div>
@@ -213,7 +259,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddPro
                 type="submit"
                 className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all mt-4"
               >
-                Salvar no Estoque
+                {editingProduct ? 'Salvar Alterações' : 'Salvar no Estoque'}
               </button>
             </form>
           </div>

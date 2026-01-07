@@ -110,6 +110,20 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, products: [...prev.products, newProduct] }));
   };
 
+  const updateProduct = (updatedProduct: Product) => {
+    setState(prev => ({
+      ...prev,
+      products: prev.products.map(p => p.id === updatedProduct.id ? updatedProduct : p)
+    }));
+  };
+
+  const removeProduct = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      products: prev.products.filter(p => p.id !== id)
+    }));
+  };
+
   const addSale = (saleData: Omit<Sale, 'id'> & { address?: string }) => {
     const saleId = `s-${Date.now()}`;
     const deliveryId = `d-${Date.now()}`;
@@ -218,7 +232,15 @@ const App: React.FC = () => {
           onRemoveDeliverer={removeDeliverer}
         />
       );
-      case 'inventory': return <Inventory products={state.products} onUpdateStock={updateStock} onAddProduct={addProduct} />;
+      case 'inventory': return (
+        <Inventory 
+          products={state.products} 
+          onUpdateStock={updateStock} 
+          onAddProduct={addProduct}
+          onUpdateProduct={updateProduct}
+          onRemoveProduct={removeProduct}
+        />
+      );
       case 'settings': return <Settings state={state} onRestore={handleRestoreState} />;
       default: return <Catalog products={state.products} onAdminAccess={() => setShowLogin(true)} />;
     }
