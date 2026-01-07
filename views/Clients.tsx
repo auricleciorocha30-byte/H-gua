@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, UserPlus, Phone, MapPin, MoreVertical, MessageSquare } from 'lucide-react';
+import { Search, UserPlus, Phone, MapPin, MoreVertical, MessageSquare, X } from 'lucide-react';
 import { Client, ClientType } from '../types';
 
 interface ClientsProps {
@@ -8,13 +8,28 @@ interface ClientsProps {
   onAddClient: (client: Partial<Client>) => void;
 }
 
-const Clients: React.FC<ClientsProps> = ({ clients }) => {
+const Clients: React.FC<ClientsProps> = ({ clients, onAddClient }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [newClient, setNewClient] = React.useState<Partial<Client>>({
+    name: '',
+    phone: '',
+    address: '',
+    type: ClientType.RESIDENTIAL
+  });
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.phone.includes(searchTerm)
   );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClient.name) return;
+    onAddClient(newClient);
+    setIsModalOpen(false);
+    setNewClient({ name: '', phone: '', address: '', type: ClientType.RESIDENTIAL });
+  };
 
   return (
     <div className="space-y-6">
@@ -24,12 +39,15 @@ const Clients: React.FC<ClientsProps> = ({ clients }) => {
           <input 
             type="text" 
             placeholder="Buscar nome ou telefone..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none shadow-sm transition-all"
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none shadow-sm transition-all text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 font-semibold">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 font-semibold text-sm"
+        >
           <UserPlus size={20} />
           Novo Cliente
         </button>
@@ -42,7 +60,7 @@ const Clients: React.FC<ClientsProps> = ({ clients }) => {
             
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 font-bold border border-gray-100">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 font-bold border border-gray-100 uppercase">
                   {client.name.charAt(0)}
                 </div>
                 <div>
@@ -58,11 +76,11 @@ const Clients: React.FC<ClientsProps> = ({ clients }) => {
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Phone size={16} className="text-gray-400" />
-                {client.phone}
+                {client.phone || 'Sem telefone'}
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <MapPin size={16} className="text-gray-400" />
-                {client.address}
+                <span className="truncate">{client.address || 'Sem endereço'}</span>
               </div>
             </div>
 
@@ -72,7 +90,7 @@ const Clients: React.FC<ClientsProps> = ({ clients }) => {
               </div>
               <div className="flex gap-2">
                 <button 
-                    onClick={() => window.open(`https://wa.me/${client.phone}`, '_blank')}
+                    onClick={() => window.open(`https://wa.me/${client.phone.replace(/\D/g, '')}`, '_blank')}
                     className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
                 >
                   <MessageSquare size={18} />
@@ -82,6 +100,77 @@ const Clients: React.FC<ClientsProps> = ({ clients }) => {
           </div>
         ))}
       </div>
+
+      {/* Modal Novo Cliente */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-red-600 p-6 text-white flex items-center justify-between">
+              <h3 className="text-xl font-bold">Cadastrar Cliente</h3>
+              <button onClick={() => setIsModalOpen(false)} className="hover:bg-red-500 p-1 rounded-full transition-colors">
+                <X />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nome Completo</label>
+                <input 
+                  required
+                  type="text" 
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
+                  placeholder="Ex: João Silva"
+                  value={newClient.name}
+                  onChange={e => setNewClient({...newClient, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">WhatsApp / Telefone</label>
+                <input 
+                  type="tel" 
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
+                  placeholder="85 9..."
+                  value={newClient.phone}
+                  onChange={e => setNewClient({...newClient, phone: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Endereço</label>
+                <textarea 
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium min-h-[80px]"
+                  placeholder="Rua, número, bairro..."
+                  value={newClient.address}
+                  onChange={e => setNewClient({...newClient, address: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Tipo de Cliente</label>
+                <div className="flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setNewClient({...newClient, type: ClientType.RESIDENTIAL})}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${newClient.type === ClientType.RESIDENTIAL ? 'bg-red-50 border-red-500 text-red-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                  >
+                    Residencial
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setNewClient({...newClient, type: ClientType.COMMERCIAL})}
+                    className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${newClient.type === ClientType.COMMERCIAL ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                  >
+                    Comercial
+                  </button>
+                </div>
+              </div>
+              <button 
+                type="submit"
+                className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all mt-4"
+              >
+                Salvar Cliente
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

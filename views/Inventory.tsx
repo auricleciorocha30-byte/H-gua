@@ -1,14 +1,33 @@
 
 import React from 'react';
-import { Package, Plus, AlertTriangle, TrendingDown, PackageOpen, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Package, Plus, AlertTriangle, TrendingDown, PackageOpen, ArrowUpCircle, ArrowDownCircle, X } from 'lucide-react';
 import { Product } from '../types';
 
 interface InventoryProps {
   products: Product[];
   onUpdateStock: (id: string, amount: number) => void;
+  onAddProduct: (product: Partial<Product>) => void;
 }
 
-const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock }) => {
+const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock, onAddProduct }) => {
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [newProduct, setNewProduct] = React.useState<Partial<Product>>({
+    name: '',
+    category: 'WATER',
+    price: 0,
+    stock: 0,
+    minStock: 5,
+    icon: '💧'
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProduct.name) return;
+    onAddProduct(newProduct);
+    setIsModalOpen(false);
+    setNewProduct({ name: '', category: 'WATER', price: 0, stock: 0, minStock: 5, icon: '💧' });
+  };
+
   return (
     <div className="space-y-8">
       {/* Inventory Health */}
@@ -41,8 +60,8 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock }) => {
                  <TrendingDown size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-medium">Sugestão Reposição</p>
-                <h4 className="text-2xl font-black text-gray-900">3 Itens</h4>
+                <p className="text-sm text-gray-500 font-medium">Categorias Ativas</p>
+                <h4 className="text-2xl font-black text-gray-900">{new Set(products.map(p => p.category)).size}</h4>
               </div>
            </div>
         </div>
@@ -54,7 +73,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock }) => {
                 <PackageOpen className="text-red-500" size={20} />
                 Lista de Estoque
             </h3>
-            <button className="text-red-600 font-bold text-sm flex items-center gap-1 hover:underline">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="text-red-600 font-bold text-sm flex items-center gap-1 hover:underline"
+            >
                 <Plus size={16} /> Adicionar Produto
             </button>
         </div>
@@ -106,6 +128,97 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateStock }) => {
           </table>
         </div>
       </div>
+
+      {/* Modal Novo Produto */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-red-600 p-6 text-white flex items-center justify-between">
+              <h3 className="text-xl font-bold">Novo Produto</h3>
+              <button onClick={() => setIsModalOpen(false)} className="hover:bg-red-500 p-1 rounded-full transition-colors">
+                <X />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-4">
+              <div className="grid grid-cols-4 gap-4">
+                 <div className="col-span-1 text-center">
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Ícone</label>
+                    <input 
+                      type="text"
+                      className="w-full py-3 bg-gray-50 border border-gray-100 rounded-xl text-center text-xl outline-none"
+                      value={newProduct.icon}
+                      onChange={e => setNewProduct({...newProduct, icon: e.target.value})}
+                    />
+                 </div>
+                 <div className="col-span-3">
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nome do Produto</label>
+                    <input 
+                      required
+                      type="text" 
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-medium"
+                      placeholder="Ex: Água 20L Naturagua"
+                      value={newProduct.name}
+                      onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                    />
+                 </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Categoria</label>
+                    <select 
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm font-medium"
+                        value={newProduct.category}
+                        onChange={e => setNewProduct({...newProduct, category: e.target.value as any})}
+                    >
+                        <option value="WATER">Água</option>
+                        <option value="GAS">Gás</option>
+                        <option value="PACK">Fardo</option>
+                        <option value="OTHER">Outros</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Preço (R$)</label>
+                    <input 
+                      type="number" step="0.01"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                      value={newProduct.price}
+                      onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
+                    />
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Estoque Inicial</label>
+                    <input 
+                      type="number"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                      value={newProduct.stock}
+                      onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Estoque Mínimo</label>
+                    <input 
+                      type="number"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                      value={newProduct.minStock}
+                      onChange={e => setNewProduct({...newProduct, minStock: parseInt(e.target.value)})}
+                    />
+                  </div>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all mt-4"
+              >
+                Salvar no Estoque
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -14,7 +14,8 @@ import {
   Delivery, 
   DeliveryStatus, 
   Sale, 
-  UserRole 
+  UserRole,
+  Product
 } from './types';
 import { INITIAL_CLIENTS, INITIAL_PRODUCTS } from './constants';
 
@@ -67,6 +68,31 @@ const App: React.FC = () => {
     setActiveTab('catalog');
   };
 
+  const addClient = (clientData: Partial<Client>) => {
+    const newClient: Client = {
+      id: `c-${Date.now()}`,
+      name: clientData.name || 'Novo Cliente',
+      phone: clientData.phone || '',
+      address: clientData.address || '',
+      type: clientData.type || 'RESIDENTIAL' as any,
+      purchaseCount: 0
+    };
+    setState(prev => ({ ...prev, clients: [newClient, ...prev.clients] }));
+  };
+
+  const addProduct = (productData: Partial<Product>) => {
+    const newProduct: Product = {
+      id: `p-${Date.now()}`,
+      name: productData.name || 'Novo Produto',
+      category: productData.category || 'WATER',
+      price: productData.price || 0,
+      stock: productData.stock || 0,
+      minStock: productData.minStock || 5,
+      icon: productData.icon || '📦'
+    };
+    setState(prev => ({ ...prev, products: [...prev.products, newProduct] }));
+  };
+
   const addSale = (saleData: Omit<Sale, 'id'> & { address?: string }) => {
     const saleId = `s-${Date.now()}`;
     const deliveryId = `d-${Date.now()}`;
@@ -117,10 +143,10 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'catalog': return <Catalog products={state.products} onAdminAccess={() => setShowLogin(true)} />;
       case 'dashboard': return <Dashboard state={state} />;
-      case 'clients': return <Clients clients={state.clients} onAddClient={() => {}} />;
+      case 'clients': return <Clients clients={state.clients} onAddClient={addClient} />;
       case 'sales': return <Sales products={state.products} clients={state.clients} onProcessSale={addSale} />;
       case 'deliveries': return <Deliveries deliveries={state.deliveries} onUpdateStatus={updateDeliveryStatus} />;
-      case 'inventory': return <Inventory products={state.products} onUpdateStock={updateStock} />;
+      case 'inventory': return <Inventory products={state.products} onUpdateStock={updateStock} onAddProduct={addProduct} />;
       default: return <Catalog products={state.products} onAdminAccess={() => setShowLogin(true)} />;
     }
   };
