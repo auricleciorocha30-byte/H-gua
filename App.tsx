@@ -152,6 +152,20 @@ const App: React.FC = () => {
     }));
   };
 
+  const removeDelivery = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      deliveries: prev.deliveries.filter(d => d.id !== id)
+    }));
+  };
+
+  const clearCompletedDeliveries = () => {
+    setState(prev => ({
+      ...prev,
+      deliveries: prev.deliveries.filter(d => d.status !== DeliveryStatus.DELIVERED && d.status !== DeliveryStatus.CANCELLED)
+    }));
+  };
+
   const addDeliverer = (name: string) => {
     if (!name || state.deliverers.includes(name)) return;
     setState(prev => ({ ...prev, deliverers: [...prev.deliverers, name] }));
@@ -198,6 +212,8 @@ const App: React.FC = () => {
           deliveries={state.deliveries} 
           deliverers={state.deliverers}
           onUpdateStatus={updateDeliveryStatus}
+          onRemoveDelivery={removeDelivery}
+          onClearCompleted={clearCompletedDeliveries}
           onAddDeliverer={addDeliverer}
           onRemoveDeliverer={removeDeliverer}
         />

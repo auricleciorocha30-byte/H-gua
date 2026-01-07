@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { Truck, MapPin, CheckCircle, Clock, Navigation, Phone, User, Plus, X, UserCheck, Trash2 } from 'lucide-react';
+import { Truck, MapPin, CheckCircle, Clock, Navigation, Phone, User, Plus, X, UserCheck, Trash2, Eraser } from 'lucide-react';
 import { Delivery, DeliveryStatus } from '../types';
 
 interface DeliveriesProps {
   deliveries: Delivery[];
   deliverers: string[];
   onUpdateStatus: (id: string, status: DeliveryStatus, delivererName?: string) => void;
+  onRemoveDelivery: (id: string) => void;
+  onClearCompleted: () => void;
   onAddDeliverer: (name: string) => void;
   onRemoveDeliverer: (name: string) => void;
 }
@@ -15,6 +17,8 @@ const Deliveries: React.FC<DeliveriesProps> = ({
   deliveries, 
   deliverers, 
   onUpdateStatus, 
+  onRemoveDelivery,
+  onClearCompleted,
   onAddDeliverer,
   onRemoveDeliverer 
 }) => {
@@ -26,6 +30,7 @@ const Deliveries: React.FC<DeliveriesProps> = ({
   const [tempDeliverer, setTempDeliverer] = React.useState('');
 
   const filtered = deliveries.filter(d => filter === 'ALL' || d.status === filter);
+  const hasCompleted = deliveries.some(d => d.status === DeliveryStatus.DELIVERED || d.status === DeliveryStatus.CANCELLED);
 
   const getStatusColor = (status: DeliveryStatus) => {
     switch(status) {
@@ -66,6 +71,18 @@ const Deliveries: React.FC<DeliveriesProps> = ({
     setSelectedDeliveryId(null);
   };
 
+  const handleClearHistory = () => {
+    if (confirm('Deseja remover permanentemente todas as entregas concluídas e canceladas do histórico?')) {
+      onClearCompleted();
+    }
+  };
+
+  const handleDeleteIndividual = (id: string) => {
+    if (confirm('Remover esta entrega do histórico?')) {
+      onRemoveDelivery(id);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -75,13 +92,26 @@ const Deliveries: React.FC<DeliveriesProps> = ({
           <FilterBtn active={filter === DeliveryStatus.IN_ROUTE} onClick={() => setFilter(DeliveryStatus.IN_ROUTE)} label="Em Rota" />
           <FilterBtn active={filter === DeliveryStatus.DELIVERED} onClick={() => setFilter(DeliveryStatus.DELIVERED)} label="Entregues" />
         </div>
-        <button 
-          onClick={() => setIsManageDeliverersOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 text-gray-600 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition-all shadow-sm shrink-0"
-        >
-          <User size={14} />
-          Entregadores
-        </button>
+        
+        <div className="flex gap-2 w-full sm:w-auto">
+          {hasCompleted && (
+            <button 
+              onClick={handleClearHistory}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-bold uppercase hover:bg-red-100 transition-all shadow-sm"
+              title="Limpar entregas concluídas"
+            >
+              <Eraser size={14} />
+              Limpar Histórico
+            </button>
+          )}
+          <button 
+            onClick={() => setIsManageDeliverersOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-100 text-gray-600 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition-all shadow-sm"
+          >
+            <User size={14} />
+            Entregadores
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -99,7 +129,12 @@ const Deliveries: React.FC<DeliveriesProps> = ({
                     <Truck size={24} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{delivery.clientName}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-gray-900 truncate">{delivery.clientName}</h3>
+                      {delivery.status === DeliveryStatus.DELIVERED && (
+                        <CheckCircle size={14} className="text-green-500" />
+                      )}
+                    </div>
                     <div className="flex items-start gap-1 text-sm text-gray-500 mt-1">
                       <MapPin size={14} className="shrink-0 mt-0.5 text-gray-300" />
                       <span className="leading-tight text-xs line-clamp-2">{delivery.address}</span>
@@ -126,26 +161,38 @@ const Deliveries: React.FC<DeliveriesProps> = ({
                 <div className="flex gap-2">
                    <button 
                       onClick={() => handleOpenMaps(delivery.address)}
-                      className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors text-xs font-bold uppercase"
+                      className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
+                      title="Abrir no Mapa"
                    >
-                      <Navigation size={14} />
-                      Rota
+                      <Navigation size={18} />
                    </button>
+                   
                    {delivery.status === DeliveryStatus.PENDING && (
                     <button 
                         onClick={() => handleStartDelivery(delivery.id)}
-                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-xs font-bold uppercase shadow-md shadow-red-100"
+                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-xs font-bold uppercase shadow-md shadow-red-100"
                     >
                         Iniciar
                     </button>
                    )}
+                   
                    {delivery.status === DeliveryStatus.IN_ROUTE && (
                     <button 
                         onClick={() => onUpdateStatus(delivery.id, DeliveryStatus.DELIVERED)}
-                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-xs font-bold uppercase shadow-md shadow-green-100"
+                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors text-xs font-bold uppercase shadow-md shadow-green-100"
                     >
                         Concluir
                     </button>
+                   )}
+
+                   {(delivery.status === DeliveryStatus.DELIVERED || delivery.status === DeliveryStatus.CANCELLED) && (
+                     <button 
+                        onClick={() => handleDeleteIndividual(delivery.id)}
+                        className="p-2.5 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-gray-100"
+                        title="Excluir entrega"
+                     >
+                        <Trash2 size={18} />
+                     </button>
                    )}
                 </div>
               </div>
